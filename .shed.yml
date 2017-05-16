@@ -1,0 +1,9 @@
+name: hg_gc_percent_340
+owner: yating-l
+description: Calculates GC percentage using a sliding window
+type: unrestricted
+homepage_url: http://hgdownload.soe.ucsc.edu/admin/exe/
+categories: [Sequence Analysis]
+long_description: |
+  This tool uses a sliding window to calculate the GC percentages
+  of a twoBit file.

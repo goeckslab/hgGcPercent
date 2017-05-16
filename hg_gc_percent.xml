@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<tool id="hg_gc_percent" name="hgGcPercent" version="1.0">
+    <description>Calculates GC percentages of a twoBit file</description>
+
+    <macros>
+        <import>ucsc_macros.xml</import>
+    </macros>
+
+    <expand macro="requirements_twobit">
+        <requirement type="package" version="340">ucsc_gcpercent</requirement>
+        <requirement type="package" version="340">ucsc_bigwig</requirement>
+    </expand>
+
+    <command detect_errors="exit_code">
+<![CDATA[
+    ## This tool generates a bigWig file instead of a gzip wiggle file in order
+    ## to facilitate testing. Support for comparing gzip files will be added to
+    ## Galaxy in 17.05: https://github.com/galaxyproject/galaxy/pull/3550
+
+    twoBitInfo "${twobit_input}" "${twobit_input}.chromInfo" &&
+
+    hgGcPercent -doGaps -noDots -verbose=0 -wigOut
+        -win=${window_size}
+        -overlap=${overlap}
+        -file=stdout
+
+        #if str($region_type.region_type_selector) == "chrom":
+            -chr="${region_type.chrom_name}"
+        #end if
+
+        db_placeholder "${twobit_input}" |
+
+        wigToBigWig stdin "${twobit_input}.chromInfo" "${bw_output}"
+]]>
+    </command>
+    <inputs>
+        <param name="twobit_input" type="data" format="twobit" label="twoBit input file" />
+
+        <param name="window_size" type="integer" min="1" value="5"
+            label="Window size"
+            help="Size of the sliding window for calculating GC percentages (-win)" />
+
+        <param name="overlap" type="integer" min="0" value="0"
+            label="Overlap size"
+            help="Size of overlap for the sliding window (-overlap)" />
+
+        <conditional name="region_type">
+            <param name="region_type_selector" type="select"
+                    label="Choose the analysis region">
+                <option value="all" selected="true">All scaffolds</option>
+                <option value="chrom">Chromosome</option>
+            </param>
+
+            <when value="all"></when>
+
+            <when value="chrom">
+                <param name="chrom_name" type="text" label="Sequence name"
+                        help="Process only this sequence in the twoBit file" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="bw_output" format="bigwig" />
+    </outputs>
+    <tests>
+        <test>
+            <!-- Test hgGcPercent with default settings -->
+            <param name="twobit_input" value="contigs.unmasked.2bit" ftype="twobit" />
+            <output name="bw_output" file="contigs_gc5Base.bw" />
+        </test>
+        <test>
+            <!-- Test hgGcPercent with custom window and overlap -->
+            <param name="twobit_input" value="contigs.unmasked.2bit" ftype="twobit" />
+            <param name="window_size" value="100" />
+            <param name="overlap" value="10" />
+            <output name="bw_output" file="contigs_gc100Base_10overlap.bw" />
+        </test>
+        <test>
+            <!-- Test hgGcPercent with only one chromosome -->
+            <param name="twobit_input" value="contigs.unmasked.2bit" ftype="twobit" />
+            <param name="region_type_selector" value="chrom" />
+            <param name="chrom_name" value="contig12" />
+            <output name="bw_output" file="contig12_gc5Base.bw" />
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+**What it does**
+
+hgGcPercent uses a sliding window to calculate the GC percentages
+of a genome assembly.
+
+    ]]></help>
+
+    <expand macro="citations" />
+</tool>
